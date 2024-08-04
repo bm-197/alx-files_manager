@@ -1,13 +1,48 @@
 import mongodb from 'mongodb'
-import envLoader from './env_loader'
+import loadEnvVariables from './env_loader'
 
 // Represent a MongoDB database client
 class DBClient {
    
   // Create a DBClient
-  constructo() {
+  constructor() {
+    loadEnvVariables();
+
     const host = process.env.DB_HOST || 'localhost';
     const port = process.env.DB_PORT || '27017';
     const database = process.env.DB_DATABSE || 'file_manager';
+    const dbURL = `mongodb://${host}:${port}/${dtabase}`;
+
+    this.client = new mongodb.MongoClient(dbURL, { useUnifiendTopology: true });
+    this.client.connect();
+  }
+  
+  // Check if client is Connected
+  isAlive() {
+    return this.client.isConnected();
+  }
+
+  // Return the number of users in the database
+  async nbUsers() {
+    return this.client.db().collection('users').countDocuments();
+  }
+
+  // Returns the number of files in the database
+  async nbFiles() {
+    return this.client.db().collection('files').countDocuments();
+  }
+
+  // Return a Reference to the user collection.
+  async usersCollection() {
+    return this.client.db().collection('users');
+  }
+
+  // Return a Reference to the file collection. 
+  async filesCollection() {
+    return this.client.db().collection('files');
   }
 }
+
+export const dbClient = new DBClient();
+export default dbClient;
+
