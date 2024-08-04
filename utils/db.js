@@ -1,5 +1,5 @@
 import mongodb from 'mongodb'
-import loadEnvVariables from './env_loader'
+import loadEnvVariables from './env_loader.js'
 
 // Represent a MongoDB database client
 class DBClient {
@@ -11,7 +11,7 @@ class DBClient {
     const host = process.env.DB_HOST || 'localhost';
     const port = process.env.DB_PORT || '27017';
     const database = process.env.DB_DATABASE || 'file_manager';
-    const dbURL = `mongodb://${host}:${port}/${dtabase}`;
+    const dbURL = `mongodb://${host}:${port}/${database}`;
 
     this.client = new mongodb.MongoClient(dbURL, { useUnifiedTopology: true });
     this.client.connect();
@@ -19,7 +19,7 @@ class DBClient {
   
   // Check if client is Connected
   isAlive() {
-    return this.isClientConnected();
+    return this.client.topology.isConnected();
   }
 
   // Return the number of users in the database
