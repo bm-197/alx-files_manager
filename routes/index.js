@@ -1,7 +1,7 @@
-import AppController from '../controller/AppController';
+import AppController from '../controllers/AppController';
 
 
-const loadRoutes = (app) {
+const loadRoutes = (app) => {
   app.get('/status', AppController.getStatus);
   app.get('/stats', AppController.getStats);
 }
