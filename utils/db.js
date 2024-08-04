@@ -10,16 +10,16 @@ class DBClient {
 
     const host = process.env.DB_HOST || 'localhost';
     const port = process.env.DB_PORT || '27017';
-    const database = process.env.DB_DATABSE || 'file_manager';
+    const database = process.env.DB_DATABASE || 'file_manager';
     const dbURL = `mongodb://${host}:${port}/${dtabase}`;
 
-    this.client = new mongodb.MongoClient(dbURL, { useUnifiendTopology: true });
+    this.client = new mongodb.MongoClient(dbURL, { useUnifiedTopology: true });
     this.client.connect();
   }
   
   // Check if client is Connected
   isAlive() {
-    return this.client.isConnected();
+    return this.isClientConnected();
   }
 
   // Return the number of users in the database
