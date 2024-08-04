@@ -28,7 +28,7 @@ class RedisClient {
 
   // Sets a key to a value, with and expiration.
   async set(key, value, duration) {
-    await promisify(this.client.SETEX).bind(this.client)(key, value, duration);
+    await promisify(this.client.SETEX).bind(this.client)(key, duration, value);
   }
   // Delete a key 
   async del(key) {
