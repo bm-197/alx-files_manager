@@ -110,4 +110,4 @@ dist
 dump.rdb
 
 # Simple test file
-test.js
+test/
