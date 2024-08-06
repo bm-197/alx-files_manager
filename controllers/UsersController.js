@@ -8,22 +8,25 @@ export default class UsersController {
 
     if (!userEmail) {
       res.status(400).json({error: "Missing Email"});
+      return;
     }
  
     if (!userPwd) {
       res.status(400).json({error: "Missing Password"});
+      return;
     }
 
-    const user = await dbClient.collection('users').findOne({email});
+    const user = await dbClient.collection('users').findOne({email: userEmail});
 
     if (user) {
       res.status(400).json({error: "Already exist"});
+      return;
     }
 
-    const userInsert = await dbClient.collection('users').insertOne({userEmail, password: sha1(userPwd)});
+    const userInsert = await dbClient.collection('users').insertOne({email: userEmail, password: sha1(userPwd)});
     const userId = userInsert.insertedId.toString();
 
-    const newUser = {id: userId, userEmail};
+    const newUser = {id: userId, email: userEmail};
 
     res.status(201).json(newUser);
   }
