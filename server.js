@@ -4,6 +4,8 @@ import loadRoutes from './routes/index.js';
 
 const app = express();
 
+app.use(express.json({ limit: '200mb'}));
+
 loadEnvVariables();
 
 const port = process.env.PORT || 5000;
