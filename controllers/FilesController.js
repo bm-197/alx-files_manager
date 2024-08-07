@@ -8,12 +8,13 @@ import { tmpdir } from 'os';
 import { promisify } from "util";
 import { v4 as uuidv4 } from 'uuid';
 import { contentType } from "mime-types";
-
+import Queue from 'bull/lib/queue.js';
 
 const mkDirAsync = promisify(mkdir);
 const writeFileAsync = promisify(writeFile);
 const statAsync = promisify(stat);
 const realpathAsync = promisify(realpath);
+const fileQueue = new Queue('thubnail generation')
 
 const VALID_TYPES = {
   folder: 'folder',
@@ -122,6 +123,11 @@ export default class FilesController {
 
     const fileInsert = await (await dbClient.filesCollection()).insertOne(newFile);
     const fileId = fileInsert.insertedId.toString();
+
+    if (fileType === VALID_TYPES.image) {
+      const jobName = `Image thumbnail [${fileOwnerId}-${fileId}]`;
+      fileQueue.add({ userId: fileOwnerId, fileId: fileId, name: jobName });
+    }
 
     res.status(201).json({
       id: fileId,
