@@ -7,11 +7,13 @@ import { join as joinPath } from 'path';
 import { tmpdir } from 'os';
 import { promisify } from "util";
 import { v4 as uuidv4 } from 'uuid';
-import { error } from "console";
+import { contentType } from "mime-types";
 
 
 const mkDirAsync = promisify(mkdir);
 const writeFileAsync = promisify(writeFile);
+const statAsync = promisify(stat);
+const realpathAsync = promisify(realpath);
 
 const VALID_TYPES = {
   folder: 'folder',
@@ -44,6 +46,21 @@ const NULL_ID = Buffer.alloc(24, '0').toString('utf-8');
 const DEFAULT_ROOT_FOLDER = 'files_manager';
 const ROOT_ID = 0;
 const MAX_FILE_PER_PAGE = 20
+
+const getUserFromXToken = async (req) => {
+  const token = req.headers['x-token'];
+
+  if (!token) {
+    return null;
+  }
+  const userId = await redisClient.get(`auth_${token}`);
+  if (!userId) {
+    return null;
+  }
+  const user = await (await dbClient.usersCollection())
+    .findOne({ _id: new mongoDBCore.BSON.ObjectId(userId) });
+  return user || null;
+};
 
 
 export default class FilesController {
@@ -119,7 +136,7 @@ export default class FilesController {
   }
 
   static async getShow(req, res) {
-    const { user } = req;
+    const { user } = getUserFromXToken(req);
     const userId = user._id.toString();
   
     const fileId= req.params ? req.params.id : NULL_ID
@@ -229,5 +246,48 @@ export default class FilesController {
       isPublic: false,
       parentId: file.parentId === ROOT_ID.toString() ? 0 : file.parentId.toString(),
      });
+  }
+
+  static async getFile(req, res) {
+    const { user } = req;
+    const userId = user ? user._id.toString() : '';
+    const fileId = req.params.id;
+    const size = req.query.size || null;
+    const file = await (await dbClient.filesCollection())
+    .findOne({ _id: new mongoDBCore.BSON.ObjectId(isValidId(fileId) ? fileId : NULL_ID), userId: new mongoDBCore.BSON.ObjectId(isValidId(userId) ? userId : NULL_ID) });
+
+    if (!file) {
+      res.status(401).json({ error: "Not found" });
+      return;
+    }
+
+    if (!file.isPublic && (userId !== file.userId.toString())) {
+      res.status(401).json({ error: "Not found" });
+      return;
+    }
+
+    if (file.type === VALID_TYPES.folder) {
+      res.status(401).json({ error: "A folder doesn't have content" });
+      return;
+    }
+
+    let filePath = file.localPath;
+    if (size) {
+      filePath = `${file.localPath}_${size}`;
+    }
+    if (existsSync(filePath)) {
+      const fileInfo = await statAsync(filePath);
+      if (!fileInfo.isFile()) {
+        res.status(404).json({ error: 'Not found' });
+        return;
+      }
+    } else {
+      res.status(404).json({ error: 'Not found' });
+      return;
+    }
+
+    const absoluteFilePath = await realpathAsync(filePath);
+    res.setHeader('Content-Type', contentType(file.name) || 'text/plain; charset=utf-8');
+    res.status(200).sendFile(absoluteFilePath);
   }
 }
