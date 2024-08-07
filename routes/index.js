@@ -14,6 +14,8 @@ const loadRoutes = (app) => {
   app.post('/files', tokenMiddleware, FilesController.postUpload);
   app.get('/files', tokenMiddleware, FilesController.getIndex);
   app.get('/files/:id', tokenMiddleware, FilesController.getShow);
+  app.put('/files/:id/publish', tokenMiddleware,FilesController.putPublish);
+  app.put('/files/:id/unpublish', tokenMiddleware, FilesController.putUnpublish);
 }
 
 export default loadRoutes;

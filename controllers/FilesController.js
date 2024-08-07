@@ -130,6 +130,7 @@ export default class FilesController {
 
     if (!file) {
       res.status(401).json({ error: "Unauthorized" });
+      return;
     }
 
     res.status(200).json({ 
@@ -137,7 +138,7 @@ export default class FilesController {
       userId: userId,
       name: file.name,
       type: file.type,
-      parentId: file.parentId === ROOT_ID.toString() ? NULL_ID : file.parentId.toString(),
+      parentId: file.parentId === ROOT_ID.toString() ? 0 : file.parentId.toString(),
      });
   }
 
@@ -177,5 +178,56 @@ export default class FilesController {
 
     res.status(200).json(files);
   }
-}
 
+  static async putPublish(req, res) {
+    const { user } = req;
+    const userId = user._id.toString();
+    const fileId = req.params.id;
+
+    const file = await (await dbClient.filesCollection())
+    .findOne({ _id: new mongoDBCore.BSON.ObjectId(isValidId(fileId) ? fileId : NULL_ID), userId: new mongoDBCore.BSON.ObjectId(isValidId(userId) ? userId : NULL_ID) });
+
+    if (!file) {
+      res.status(401).json({ error: "Not found" });
+      return;
+    }
+
+    await (await dbClient.filesCollection())
+    .updateOne({ _id: new mongoDBCore.BSON.ObjectId(isValidId(fileId) ? fileId : NULL_ID), userId: new mongoDBCore.BSON.ObjectId(isValidId(userId) ? userId : NULL_ID) }, { $set: { isPublic: true } });
+
+    res.status(200).json({ 
+      id: fileId,
+      userId: userId,
+      name: file.name,
+      type: file.type,
+      isPublic: true,
+      parentId: file.parentId === ROOT_ID.toString() ? 0 : file.parentId.toString(),
+     });
+  }
+
+  static async putUnpublish(req, res) {
+    const { user } = req;
+    const userId = user._id.toString();
+    const fileId = req.params.id;
+
+    const file = await (await dbClient.filesCollection())
+    .findOne({ _id: new mongoDBCore.BSON.ObjectId(isValidId(fileId) ? fileId : NULL_ID), userId: new mongoDBCore.BSON.ObjectId(isValidId(userId) ? userId : NULL_ID) });
+
+    if (!file) {
+      res.status(401).json({ error: "Not found" });
+      return;
+    }
+
+    await (await dbClient.filesCollection())
+    .updateOne({ _id: new mongoDBCore.BSON.ObjectId(isValidId(fileId) ? fileId : NULL_ID), userId: new mongoDBCore.BSON.ObjectId(isValidId(userId) ? userId : NULL_ID) }, { $set: { isPublic: false } });
+
+    res.status(200).json({ 
+      id: fileId,
+      userId: userId,
+      name: file.name,
+      type: file.type,
+      isPublic: false,
+      parentId: file.parentId === ROOT_ID.toString() ? 0 : file.parentId.toString(),
+     });
+  }
+}
