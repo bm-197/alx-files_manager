@@ -45,7 +45,7 @@ const ROOT_ID = 0;
 
 
 
-export default class FileController {
+export default class FilesController {
   static async postUpload (req, res) {
     const fileName = req.body ? req.body.name : null;
     const fileType = req.body ? req.body.type : null;
