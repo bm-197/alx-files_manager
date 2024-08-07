@@ -7,6 +7,7 @@ import { join as joinPath } from 'path';
 import { tmpdir } from 'os';
 import { promisify } from "util";
 import { v4 as uuidv4 } from 'uuid';
+import { error } from "console";
 
 
 const mkDirAsync = promisify(mkdir);
@@ -42,7 +43,7 @@ const isValidId = (id) => {
 const NULL_ID = Buffer.alloc(24, '0').toString('utf-8');
 const DEFAULT_ROOT_FOLDER = 'files_manager';
 const ROOT_ID = 0;
-
+const MAX_FILE_PER_PAGE = 20
 
 
 export default class FilesController {
@@ -115,6 +116,66 @@ export default class FilesController {
         ? 0
         : fileParentId,
     });
+  }
+
+  static async getShow(req, res) {
+    const { user } = req;
+    const userId = user._id.toString();
+  
+    const fileId= req.params ? req.params.id : NULL_ID
+
+    const file = await (await dbClient.filesCollection())
+    .findOne({ _id: new mongoDBCore.BSON.ObjectId(isValidId(fileId) ? fileId : NULL_ID), userId: new mongoDBCore.BSON.ObjectId(isValidId(userId) ? userId : NULL_ID) });
+
+
+    if (!file) {
+      res.status(401).json({ error: "Unauthorized" });
+    }
+
+    res.status(200).json({ 
+      id: fileId,
+      userId: userId,
+      name: file.name,
+      type: file.type,
+      parentId: file.parentId === ROOT_ID.toString() ? NULL_ID : file.parentId.toString(),
+     });
+  }
+
+  static async getIndex(req, res) {
+    const { user } = req;
+    const userId = user._id;
+    const filesParentId = req.query.parentId || ROOT_ID.toString();
+    const page = /\d+/.test((req.query.page || '').toString())
+      ? Number.parseInt(req.query.page, 10)
+      : 0;
+  
+    const filesFilter = {
+      userId: userId,
+      parentId: filesParentId === ROOT_ID.toString() ? filesParentId: new mongoDBCore.BSON.ObjectId(isValidId(filesParentId) ? filesParentId : NULL_ID),
+    }
+
+    const files = await (await (await dbClient.filesCollection())
+    .aggregate([
+      { $match: filesFilter },
+      { $sort: { _id: -1 } },
+      { $skip: page * MAX_FILE_PER_PAGE },
+      { $limit: MAX_FILE_PER_PAGE },
+      {
+        $project: {
+          _id: 0,
+          id: '$_id',
+          userId: '$userId',
+          name: '$name',
+          type: '$type',
+          isPublic: '$isPublic',
+          parentId: {
+            $cond: { if: { $eq: ['$parentId', '0'] }, then: 0, else: '$parentId' },
+          },
+        },
+      },
+    ])).toArray();
+
+    res.status(200).json(files);
   }
 }
 

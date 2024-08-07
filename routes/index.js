@@ -12,6 +12,8 @@ const loadRoutes = (app) => {
   app.get('/disconnect', tokenMiddleware, AuthController.getDisconnect);
   app.get('/users/me', tokenMiddleware, UsersController.getMe);
   app.post('/files', tokenMiddleware, FilesController.postUpload);
+  app.get('/files', tokenMiddleware, FilesController.getIndex);
+  app.get('/files/:id', tokenMiddleware, FilesController.getShow);
 }
 
 export default loadRoutes;
